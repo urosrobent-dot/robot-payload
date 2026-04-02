@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase'
 import { useState } from 'react'
 import EditRobotModal from '@/components/EditRobotModal'
+import PayloadChecker from '@/components/PayloadChecker'
 
 type Robot = {
   id: string
@@ -22,7 +23,7 @@ type Robot = {
 }
 
 type Props = {
-  robot: Robot | null
+  robot: Robot
   onDeleted: () => void
   onEdit: () => void
   onUpdated: () => void
@@ -32,6 +33,7 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated }: Pro
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [view, setView] = useState<'specs' | 'checker'>('specs')
 
   async function handleDelete() {
     setDeleting(true)
@@ -50,6 +52,18 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated }: Pro
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => setView('specs')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'specs' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+          >
+            Specifications
+          </button>
+          <button
+            onClick={() => setView('checker')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'checker' ? 'bg-orange-600 text-white border-orange-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+          >
+            Payload Checker
+          </button>
+          <button
             onClick={() => setEditing(true)}
             className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
           >
@@ -64,60 +78,65 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated }: Pro
         </div>
       </div>
 
-      {/* Specs grid */}
-      <div>
-        <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Basic Specifications</p>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'J6 Max Payload', value: robot.max_payload_kg, unit: 'kg' },
-            { label: 'Max Reach', value: robot.max_reach_mm, unit: 'mm' },
-            { label: 'Repeatability', value: robot.repeatability_mm, unit: 'mm' },
-            { label: 'J5 Offset', value: robot.j5_offset_mm, unit: 'mm' },
-            { label: 'Axes', value: robot.axes, unit: '' },
-          ].map(({ label, value, unit }) => (
-            <div key={label} className="bg-white rounded-xl p-4 border border-gray-200">
-              <p className="text-xs text-gray-400 mb-1">{label}</p>
-              <p className="text-xl font-medium text-gray-900">{value ?? '—'} <span className="text-sm text-gray-400">{unit}</span></p>
+      {/* Specs view */}
+      {view === 'specs' && (
+        <>
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Basic Specifications</p>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'J6 Max Payload', value: robot.max_payload_kg, unit: 'kg' },
+                { label: 'Max Reach', value: robot.max_reach_mm, unit: 'mm' },
+                { label: 'Repeatability', value: robot.repeatability_mm, unit: 'mm' },
+                { label: 'J5 Offset', value: robot.j5_offset_mm, unit: 'mm' },
+                { label: 'Axes', value: robot.axes, unit: '' },
+              ].map(({ label, value, unit }) => (
+                <div key={label} className="bg-white rounded-xl p-4 border border-gray-200">
+                  <p className="text-xs text-gray-400 mb-1">{label}</p>
+                  <p className="text-xl font-medium text-gray-900">{value ?? '—'} <span className="text-sm text-gray-400">{unit}</span></p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Moments */}
-        <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Max Moments</p>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {[
-              { label: 'Axis 4', value: robot.m4_max_nm },
-              { label: 'Axis 5', value: robot.m5_max_nm },
-              { label: 'Axis 6', value: robot.m6_max_nm },
-            ].map(({ label, value }, i, arr) => (
-              <div key={label} className={`flex justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <span className="text-sm text-gray-500">{label}</span>
-                <span className="text-sm font-medium text-gray-900">{value ?? '—'} <span className="text-gray-400">Nm</span></span>
-              </div>
-            ))}
           </div>
-        </div>
 
-        {/* Inertias */}
-        <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Max Inertias</p>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {[
-              { label: 'Axis 4', value: robot.i4_max_kgm2 },
-              { label: 'Axis 5', value: robot.i5_max_kgm2 },
-              { label: 'Axis 6', value: robot.i6_max_kgm2 },
-            ].map(({ label, value }, i, arr) => (
-              <div key={label} className={`flex justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <span className="text-sm text-gray-500">{label}</span>
-                <span className="text-sm font-medium text-gray-900">{value ?? '—'} <span className="text-gray-400">kg·m²</span></span>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Max Moments</p>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {[
+                  { label: 'Axis 4', value: robot.m4_max_nm },
+                  { label: 'Axis 5', value: robot.m5_max_nm },
+                  { label: 'Axis 6', value: robot.m6_max_nm },
+                ].map(({ label, value }, i, arr) => (
+                  <div key={label} className={`flex justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                    <span className="text-sm text-gray-500">{label}</span>
+                    <span className="text-sm font-medium text-gray-900">{value ?? '—'} <span className="text-gray-400">Nm</span></span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Max Inertias</p>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {[
+                  { label: 'Axis 4', value: robot.i4_max_kgm2 },
+                  { label: 'Axis 5', value: robot.i5_max_kgm2 },
+                  { label: 'Axis 6', value: robot.i6_max_kgm2 },
+                ].map(({ label, value }, i, arr) => (
+                  <div key={label} className={`flex justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                    <span className="text-sm text-gray-500">{label}</span>
+                    <span className="text-sm font-medium text-gray-900">{value ?? '—'} <span className="text-gray-400">kg·m²</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
+
+      {/* Payload Checker view */}
+      {view === 'checker' && <PayloadChecker robot={robot} />}
 
       {/* Delete confirmation */}
       {confirming && (
@@ -143,13 +162,14 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated }: Pro
           </div>
         </div>
       )}
+
       {editing && (
-  <EditRobotModal
-    robot={robot}
-    onClose={() => setEditing(false)}
-    onSaved={() => { setEditing(false); onUpdated() }}
-  />
-)}
+        <EditRobotModal
+          robot={robot}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); onUpdated() }}
+        />
+      )}
     </div>
   )
 }
