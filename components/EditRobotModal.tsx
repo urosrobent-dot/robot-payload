@@ -3,9 +3,27 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+type Robot = {
+  id: string
+  manufacturer: string
+  model: string
+  max_payload_kg: number | null
+  max_reach_mm: number | null
+  axes: number
+  j5_offset_mm: number | null
+  repeatability_mm: number | null
+  m4_max_nm: number | null
+  m5_max_nm: number | null
+  m6_max_nm: number | null
+  i4_max_kgm2: number | null
+  i5_max_kgm2: number | null
+  i6_max_kgm2: number | null
+}
+
 type Props = {
+  robot: Robot
   onClose: () => void
-  onAdded: () => void
+  onSaved: () => void
 }
 
 type FieldProps = {
@@ -34,21 +52,21 @@ function Field({ label, unit, placeholder, value, onChange }: FieldProps) {
   )
 }
 
-export default function AddRobotModal({ onClose, onAdded }: Props) {
+export default function EditRobotModal({ robot, onClose, onSaved }: Props) {
   const [form, setForm] = useState({
-    manufacturer: '',
-    model: '',
-    max_payload_kg: '',
-    max_reach_mm: '',
-    axes: '6',
-    j5_offset_mm: '',
-    repeatability_mm: '',
-    m4_max_nm: '',
-    m5_max_nm: '',
-    m6_max_nm: '',
-    i4_max_kgm2: '',
-    i5_max_kgm2: '',
-    i6_max_kgm2: '',
+    manufacturer: robot.manufacturer,
+    model: robot.model,
+    max_payload_kg: robot.max_payload_kg?.toString() || '',
+    max_reach_mm: robot.max_reach_mm?.toString() || '',
+    axes: robot.axes?.toString() || '6',
+    j5_offset_mm: robot.j5_offset_mm?.toString() || '',
+    repeatability_mm: robot.repeatability_mm?.toString() || '',
+    m4_max_nm: robot.m4_max_nm?.toString() || '',
+    m5_max_nm: robot.m5_max_nm?.toString() || '',
+    m6_max_nm: robot.m6_max_nm?.toString() || '',
+    i4_max_kgm2: robot.i4_max_kgm2?.toString() || '',
+    i5_max_kgm2: robot.i5_max_kgm2?.toString() || '',
+    i6_max_kgm2: robot.i6_max_kgm2?.toString() || '',
   })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
@@ -76,7 +94,7 @@ async function handleSave() {
     }
 
     setSaving(true)
-const { data, error } = await (supabase.from('robots') as any).insert({
+    await (supabase.from('robots') as any).update({
       manufacturer: form.manufacturer,
       model: form.model,
       max_payload_kg: num(form.max_payload_kg),
@@ -90,17 +108,16 @@ const { data, error } = await (supabase.from('robots') as any).insert({
       i4_max_kgm2: num(form.i4_max_kgm2),
       i5_max_kgm2: num(form.i5_max_kgm2),
       i6_max_kgm2: num(form.i6_max_kgm2),
-    })
-    console.log('data:', data)
-    console.log('error:', error)
+    }).eq('id', robot.id)
     setSaving(false)
-    onAdded()
+    onSaved()
     onClose()
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-[560px] max-h-[90vh] overflow-y-auto shadow-xl">
+        <h2 className="text-base font-medium text-gray-900 mb-5">Edit Robot</h2>
         {errors.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-5">
             <p className="text-xs font-medium text-red-600 mb-1">Please fix the following errors:</p>
@@ -178,7 +195,7 @@ const { data, error } = await (supabase.from('robots') as any).insert({
             disabled={saving}
             className="flex-1 bg-orange-600 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save Robot'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

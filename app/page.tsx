@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import AddRobotModal from '@/components/AddRobotModal'
-import PayloadPanel from '@/components/PayloadPanel'
+import RobotDetail from '@/components/RobotDetail'
 
 type Robot = {
   id: string
@@ -12,6 +12,14 @@ type Robot = {
   max_payload_kg: number
   max_reach_mm: number
   axes: number
+  j5_offset_mm: number
+  repeatability_mm: number
+  m4_max_nm: number
+  m5_max_nm: number
+  m6_max_nm: number
+  i4_max_kgm2: number
+  i5_max_kgm2: number
+  i6_max_kgm2: number
 }
 
 export default function Home() {
@@ -30,6 +38,14 @@ export default function Home() {
     setLoading(false)
   }
 
+  async function handleUpdated() {
+    const { data } = await supabase.from('robots').select('*').order('manufacturer')
+    const updated = data || []
+    setRobots(updated)
+    const fresh = updated.find((r: Robot) => r.id === selected?.id) ?? null
+    setSelected(fresh)
+  }
+
   const manufacturers = [...new Set(robots.map(r => r.manufacturer))]
 
   return (
@@ -37,11 +53,14 @@ export default function Home() {
       {/* Sidebar */}
       <div className="w-60 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <h1 className="text-sm font-medium uppercase tracking-widest">RoboPayload</h1>
+          <h1 className="text-sm font-medium uppercase tracking-widest">IRPC</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Industrial Robot Payload Checker</p>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           {loading ? (
-            <p className="text-xs text-gray-400 p-4">Nalagam...</p>
+            <p className="text-xs text-gray-400 p-4">Loading...</p>
+          ) : robots.length === 0 ? (
+            <p className="text-xs text-gray-400 p-4">No robots in database.</p>
           ) : (
             manufacturers.map(mfr => (
               <div key={mfr}>
@@ -66,32 +85,38 @@ export default function Home() {
         <div className="p-4">
           <button
             onClick={() => setShowModal(true)}
-            className="w-full bg-orange-600 text-white text-sm font-medium py-2 rounded-lg"
+            className="w-full bg-orange-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-orange-700"
           >
-            + Dodaj robota
+            + Add Robot
           </button>
         </div>
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {selected ? (
-           <PayloadPanel robot={selected} />
+          <RobotDetail
+            robot={selected}
+            onDeleted={() => { setSelected(null); fetchRobots() }}
+            onEdit={() => {}}
+            onUpdated={handleUpdated}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-gray-400">
-              <p className="text-lg font-medium">Izberi robota</p>
-              <p className="text-sm mt-1">ali dodaj novega</p>
+              <p className="text-lg font-medium">Select a robot</p>
+              <p className="text-sm mt-1">or add a new one</p>
             </div>
           </div>
         )}
       </div>
-        {showModal && (
-         <AddRobotModal
+
+      {showModal && (
+        <AddRobotModal
           onClose={() => setShowModal(false)}
           onAdded={fetchRobots}
-         />
-       )}
+        />
+      )}
     </div>
   )
 }
