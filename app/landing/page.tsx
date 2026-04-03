@@ -35,7 +35,7 @@ export default function LandingPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      setSuccess('Account created! You can now log in.')
+      setSuccess('Check your email to confirm your account before logging in.')
       setMode('login')
       setLoading(false)
     }
@@ -74,7 +74,7 @@ export default function LandingPage() {
           </button>
           <button
             onClick={() => { setMode('signup'); setError(''); setSuccess('') }}
-            className="px-4 py-1.5 text-xs tracking-wider bg-orange-600 hover:bg-orange-500 text-white transition-all rounded"
+            className="px-4 py-1.5 text-xs tracking-wider bg-sky-800 hover:bg-orange-500 text-white transition-all rounded"
           >
             SIGN UP
           </button>
@@ -145,7 +145,7 @@ export default function LandingPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => setMode('signup')}
-                  className="px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white text-xs tracking-wider uppercase transition-all rounded"
+                  className="px-8 py-3 bg-sky-800 hover:bg-orange-500 text-white text-xs tracking-wider uppercase transition-all rounded"
                 >
                   Create Account
                 </button>
@@ -224,7 +224,7 @@ export default function LandingPage() {
               <button
                 onClick={mode === 'login' ? handleLogin : handleSignup}
                 disabled={loading}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-xs tracking-wider uppercase transition-all rounded mb-4"
+                className="w-full py-3 bg-sky-800 hover:bg-orange-500 disabled:opacity-50 text-white text-xs tracking-wider uppercase transition-all rounded mb-4"
               >
                 {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
               </button>

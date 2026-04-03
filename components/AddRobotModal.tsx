@@ -176,7 +176,7 @@ const { data, error } = await (supabase.from('robots') as any).insert({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 bg-orange-600 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-50"
+            className="flex-1 bg-sky-800 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Robot'}
           </button>

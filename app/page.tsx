@@ -101,7 +101,7 @@ async function handleLogout() {
             onClick={() => setSection('checker')}
             className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
               section === 'checker'
-                ? 'bg-orange-600 text-white'
+                ? 'bg-sky-800 text-white'
                 : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
@@ -142,7 +142,7 @@ async function handleLogout() {
           {isAdmin && section === 'library' && (
             <button
               onClick={() => setShowModal(true)}
-              className="w-full bg-orange-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-orange-700"
+              className="w-full bg-sky-800 text-white text-sm font-medium py-2 rounded-lg hover:bg-sky-950"
             >
               + Add Robot
             </button>

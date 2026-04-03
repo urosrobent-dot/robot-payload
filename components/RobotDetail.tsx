@@ -61,7 +61,7 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated, isAdm
     </button>
     <button
       onClick={() => setView('checker')}
-      className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'checker' ? 'bg-orange-600 text-white border-orange-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+      className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'checker' ? 'bg-sky-800 text-white border-orange-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
     >
       Payload Checker
     </button>
