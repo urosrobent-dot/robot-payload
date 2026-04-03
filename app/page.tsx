@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import AddRobotModal from '@/components/AddRobotModal'
 import RobotDetail from '@/components/RobotDetail'
 import PayloadChecker from '@/components/PayloadChecker'
+import RobotFinder from '@/components/RobotFinder'
 
 
 type Robot = {
@@ -25,7 +26,7 @@ type Robot = {
   i6_max_kgm2: number
 }
 
-type Section = 'library' | 'checker'
+type Section = 'library' | 'checker' | 'finder'
 
 export default function Home() {
   const router = useRouter()
@@ -80,34 +81,43 @@ async function handleLogout() {
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         {/* Logo */}
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-sm font-medium uppercase tracking-widest">IRPC</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Industrial Robot Payload Checker</p>
-        </div>
+<div className="p-4 border-b border-gray-200">
+  <img src="/logo.png" alt="IRPC" className="h-10 w-auto" />
+</div>
 
         {/* Section tabs */}
-        <div className="p-3 border-b border-gray-200 flex gap-2">
-          <button
-            onClick={() => setSection('library')}
-            className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
-              section === 'library'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            Robot Library
-          </button>
-          <button
-            onClick={() => setSection('checker')}
-            className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
-              section === 'checker'
-                ? 'bg-sky-800 text-white'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            Payload Checker
-          </button>
-        </div>
+       <div className="p-3 border-b border-gray-200 flex gap-2">
+  <button
+    onClick={() => setSection('library')}
+    className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
+      section === 'library'
+        ? 'bg-gray-900 text-white'
+        : 'text-gray-500 hover:bg-gray-50'
+    }`}
+  >
+    Robot Library
+  </button>
+  <button
+    onClick={() => setSection('checker')}
+    className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
+      section === 'checker'
+        ? 'bg-blue-500 text-white'
+        : 'text-gray-500 hover:bg-gray-50'
+    }`}
+  >
+    Payload Checker
+  </button>
+  <button
+  onClick={() => { setSection('finder'); setSelected(null) }}
+  className={`flex-1 py-1.5 text-xs font-medium rounded-lg ${
+    section === 'finder'
+      ? 'bg-blue-500 text-white'
+      : 'text-gray-500 hover:bg-gray-50'
+  }`}
+>
+  Finder
+</button>
+</div>
 
         {/* Robot list */}
         <div className="flex-1 overflow-y-auto py-2">
@@ -122,7 +132,7 @@ async function handleLogout() {
                 {robots.filter(r => r.manufacturer === mfr).map(robot => (
                   <div
                     key={robot.id}
-                    onClick={() => setSelected(robot)}
+                    onClick={() => { setSelected(robot); if (section === 'finder') setSection('checker') }}
                     className={`px-4 py-2 text-sm cursor-pointer border-l-2 ${
                       selected?.id === robot.id
                         ? 'border-orange-500 bg-gray-50 text-gray-900 font-medium'
@@ -167,36 +177,38 @@ async function handleLogout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-y-auto">
-        {selected ? (
-          section === 'library' ? (
-            <RobotDetail
-              robot={selected}
-              onDeleted={() => { setSelected(null); fetchRobots() }}
-              onEdit={() => {}}
-              onUpdated={handleUpdated}
-              isAdmin={isAdmin}
-            />
-          ) : (
-            <div className="p-8 flex flex-col gap-6">
-              <div>
-                <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
-                <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
-              </div>
-              <PayloadChecker robot={selected} />
-            </div>
-          )
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <p className="text-lg font-medium">
-                {section === 'library' ? 'Select a robot' : 'Select a robot to check payload'}
-              </p>
-              <p className="text-sm mt-1">
-                {section === 'library' ? 'or add a new one' : 'from the list on the left'}
-              </p>
-            </div>
-          </div>
-        )}
+        {section === 'finder' ? (
+  <RobotFinder />
+) : selected ? (
+  section === 'library' ? (
+    <RobotDetail
+      robot={selected}
+      onDeleted={() => { setSelected(null); fetchRobots() }}
+      onEdit={() => {}}
+      onUpdated={handleUpdated}
+      isAdmin={isAdmin}
+    />
+  ) : (
+    <div className="p-8 flex flex-col gap-6">
+      <div>
+        <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
+        <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
+      </div>
+      <PayloadChecker robot={selected} />
+    </div>
+  )
+) : (
+  <div className="flex-1 flex items-center justify-center">
+    <div className="text-center text-gray-400">
+      <p className="text-lg font-medium">
+        {section === 'library' ? 'Select a robot' : 'Select a robot to check payload'}
+      </p>
+      <p className="text-sm mt-1">
+        {section === 'library' ? 'or add a new one' : 'from the list on the left'}
+      </p>
+    </div>
+  </div>
+)}
       </div>
 
       {showModal && (

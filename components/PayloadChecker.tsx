@@ -195,9 +195,9 @@ export default function PayloadChecker({ robot }: Props) {
 
   function calculate() {
     const m = parseFloat(mass) || 0
-    const cx = parseFloat(x) || 0
-    const cy = parseFloat(y) || 0
-    const cz = parseFloat(z) || 0
+    const cx = (parseFloat(x) || 0) / 1000
+    const cy = (parseFloat(y) || 0) / 1000
+    const cz = (parseFloat(z) || 0) / 1000
     const iix = parseFloat(ix) || 0
     const iiy = parseFloat(iy) || 0
     const iiz = parseFloat(iz) || 0
@@ -257,11 +257,11 @@ export default function PayloadChecker({ robot }: Props) {
           <Field label="J6 Payload Mass" unit="kg" value={mass} onChange={setMass} />
           <Field label="J3 Arm Load" unit="kg" value={j3} onChange={setJ3} />
 
-          <p className="text-xs text-gray-400 uppercase tracking-wider pt-2">Center of Gravity (m)</p>
+          <p className="text-xs text-gray-400 uppercase tracking-wider pt-2">Center of Gravity (mm)</p>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="X" unit="m" value={x} onChange={setX} />
-            <Field label="Y" unit="m" value={y} onChange={setY} />
-            <Field label="Z" unit="m" value={z} onChange={setZ} />
+          <Field label="X" unit="mm" value={x} onChange={setX} />
+          <Field label="Y" unit="mm" value={y} onChange={setY} />
+          <Field label="Z" unit="mm" value={z} onChange={setZ} />
           </div>
 
           <p className="text-xs text-gray-400 uppercase tracking-wider pt-2">Payload Inertia (kg·m²)</p>
