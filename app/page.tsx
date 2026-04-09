@@ -8,6 +8,16 @@ import RobotDetail from '@/components/RobotDetail'
 import PayloadChecker from '@/components/PayloadChecker'
 import RobotFinder from '@/components/RobotFinder'
 
+type PayloadState = {
+  mass: string
+  j3: string
+  x: string
+  y: string
+  z: string
+  ix: string
+  iy: string
+  iz: string
+}
 
 type Robot = {
   id: string
@@ -36,6 +46,9 @@ export default function Home() {
   const [showModal, setShowModal] = useState(false)
   const [section, setSection] = useState<Section>('library')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [payloadState, setPayloadState] = useState<PayloadState>({
+  mass: '', j3: '', x: '', y: '', z: '', ix: '', iy: '', iz: ''
+})
 
 useEffect(() => {
     fetchRobots()
@@ -189,13 +202,13 @@ async function handleLogout() {
       isAdmin={isAdmin}
     />
   ) : (
-    <div className="p-8 flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
-        <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
-      </div>
-      <PayloadChecker robot={selected} />
-    </div>
+  <div className="p-8 flex flex-col gap-6">
+  <div>
+    <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
+    <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
+  </div>
+  <PayloadChecker robot={selected} state={payloadState} onStateChange={setPayloadState} />
+</div>
   )
 ) : (
   <div className="flex-1 flex items-center justify-center">

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts'
+import ArmVisualization3D from '@/components/ArmVisualization3D'
+import PayloadDiagram from '@/components/PayloadDiagram'
 
 type Robot = {
   id: string
@@ -20,8 +22,21 @@ type Robot = {
   i6_max_kgm2: number
 }
 
+type PayloadState = {
+  mass: string
+  j3: string
+  x: string
+  y: string
+  z: string
+  ix: string
+  iy: string
+  iz: string
+}
+
 type Props = {
   robot: Robot
+  state: PayloadState
+  onStateChange: (s: PayloadState) => void
 }
 
 type Results = {
@@ -182,16 +197,26 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
   )
 }
 
-export default function PayloadChecker({ robot }: Props) {
-  const [mass, setMass] = useState('')
-  const [j3, setJ3] = useState('')
-  const [x, setX] = useState('')
-  const [y, setY] = useState('')
-  const [z, setZ] = useState('')
-  const [ix, setIx] = useState('')
-  const [iy, setIy] = useState('')
-  const [iz, setIz] = useState('')
+export default function PayloadChecker({ robot, state, onStateChange }: Props) {
+const mass = state.mass
+const j3 = state.j3
+const x = state.x
+const y = state.y
+const z = state.z
+const ix = state.ix
+const iy = state.iy
+const iz = state.iz
+
+const setMass = (v: string) => onStateChange({ ...state, mass: v })
+const setJ3 = (v: string) => onStateChange({ ...state, j3: v })
+const setX = (v: string) => onStateChange({ ...state, x: v })
+const setY = (v: string) => onStateChange({ ...state, y: v })
+const setZ = (v: string) => onStateChange({ ...state, z: v })
+const setIx = (v: string) => onStateChange({ ...state, ix: v })
+const setIy = (v: string) => onStateChange({ ...state, iy: v })
+const setIz = (v: string) => onStateChange({ ...state, iz: v })
   const [results, setResults] = useState<Results | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   function calculate() {
     const m = parseFloat(mass) || 0
@@ -271,12 +296,20 @@ export default function PayloadChecker({ robot }: Props) {
             <Field label="Iz" unit="kg·m²" value={iz} onChange={setIz} />
           </div>
 
-          <button
-            onClick={calculate}
-            className="w-full bg-sky-800 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-950 mt-2"
-          >
-            Calculate
-          </button>
+<div className="flex gap-2 mt-2">
+  <button
+    onClick={calculate}
+    className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-all"
+  >
+    Calculate
+  </button>
+  <button
+    onClick={() => setConfirmClear(true)}
+    className="px-4 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50"
+  >
+    Clear
+  </button>
+</div>
         </div>
 
         {/* Results */}
@@ -366,7 +399,14 @@ export default function PayloadChecker({ robot }: Props) {
         </div>
       </div>
 
-      {/* Load Diagrams */}
+
+      <PayloadDiagram
+  robot={robot}
+  lx={parseFloat(x) || 0}
+  ly={parseFloat(y) || 0}
+  lz={parseFloat(z) || 0}
+  mass={parseFloat(mass) || 0}
+/>
       {results && (
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Load Diagrams</p>
@@ -395,6 +435,42 @@ export default function PayloadChecker({ robot }: Props) {
           </div>
         </div>
       )}
+      {confirmClear && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 w-80 shadow-xl">
+      <h3 className="text-base font-medium text-gray-900 mb-2">Clear Data</h3>
+      <p className="text-sm text-gray-500 mb-5">Are you sure you want to clear all payload input data?</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setConfirmClear(false)}
+          className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            onStateChange({ mass: '', j3: '', x: '', y: '', z: '', ix: '', iy: '', iz: '' })
+            setResults(null)
+            setConfirmClear(false)
+          }}
+          className="flex-1 bg-red-500 text-white text-sm font-medium py-2 rounded-lg hover:bg-red-600"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+      <ArmVisualization3D
+        lx={parseFloat(x) || 0}
+        ly={parseFloat(y) || 0}
+        lz={parseFloat(z) || 0}
+        j5OffsetMm={robot.j5_offset_mm || 0}
+        mass={parseFloat(mass) || 0}
+        ix={parseFloat(ix) || 0}
+        iy={parseFloat(iy) || 0}
+        iz={parseFloat(iz) || 0}
+      />
     </div>
   )
 }
