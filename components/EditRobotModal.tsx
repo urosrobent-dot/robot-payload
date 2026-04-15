@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+
 type Robot = {
   id: string
   manufacturer: string
@@ -18,6 +19,7 @@ type Robot = {
   i4_max_kgm2: number | null
   i5_max_kgm2: number | null
   i6_max_kgm2: number | null
+  image_url?: string | null
 }
 
 type Props = {
@@ -69,10 +71,27 @@ export default function EditRobotModal({ robot, onClose, onSaved }: Props) {
     i6_max_kgm2: robot.i6_max_kgm2?.toString() || '',
   })
   const [saving, setSaving] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+const [imagePreview, setImagePreview] = useState<string | null>(robot.image_url || null)
+const [uploading, setUploading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }))
   const num = (val: string) => val === '' ? null : parseFloat(val)
+
+  async function handleImageUpload(file: File) {
+  setUploading(true)
+  const ext = file.name.split('.').pop()
+  const path = `${robot.id}.${ext}`
+  const { error } = await supabase.storage.from('robot-images').upload(path, file, { upsert: true })
+  if (!error) {
+    const { data } = supabase.storage.from('robot-images').getPublicUrl(path)
+    setImagePreview(data.publicUrl)
+    setImageFile(null)
+  }
+  setUploading(false)
+  return error ? null : supabase.storage.from('robot-images').getPublicUrl(path).data.publicUrl
+}
 
 async function handleSave() {
     const newErrors: string[] = []
@@ -108,6 +127,7 @@ async function handleSave() {
       i4_max_kgm2: num(form.i4_max_kgm2),
       i5_max_kgm2: num(form.i5_max_kgm2),
       i6_max_kgm2: num(form.i6_max_kgm2),
+      image_url: imagePreview,
     }).eq('id', robot.id)
     setSaving(false)
     onSaved()
@@ -118,6 +138,63 @@ async function handleSave() {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-[560px] max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-base font-medium text-gray-900 mb-5">Edit Robot</h2>
+        {/* Image upload */}
+<div className="mb-5">
+  <label className="text-xs text-gray-500 mb-2 block">Robot Image</label>
+  <div className="flex gap-3 items-center">
+    {imagePreview ? (
+      <img src={imagePreview} alt="Robot" className="w-20 h-20 object-contain rounded-lg border border-gray-200 bg-gray-50" />
+    ) : (
+      <div className="w-20 h-20 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+        <span className="text-xs text-gray-400">No image</span>
+      </div>
+    )}
+    <div className="flex flex-col gap-2">
+      <label className="cursor-pointer px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+        {uploading ? 'Uploading...' : 'Upload image'}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async e => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            setImageFile(file)
+            setImagePreview(URL.createObjectURL(file))
+            await handleImageUpload(file)
+          }}
+        />
+      </label>
+      {imagePreview && (
+        <button
+          onClick={() => setImagePreview(null)}
+          className="px-3 py-1.5 text-xs border border-red-200 rounded-lg hover:bg-red-50 text-red-500"
+        >
+          Remove
+        </button>
+      )}
+      <div className="mt-3">
+  <label className="text-xs text-gray-500 mb-1 block">Or paste image URL</label>
+  <div className="flex gap-2">
+    <input
+      type="text"
+      placeholder="https://..."
+      className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-900"
+      onBlur={e => {
+        if (e.target.value) setImagePreview(e.target.value)
+      }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          const val = (e.target as HTMLInputElement).value
+          if (val) setImagePreview(val)
+        }
+      }}
+    />
+  </div>
+</div>
+    </div>
+  </div>
+</div>
         {errors.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-5">
             <p className="text-xs font-medium text-red-600 mb-1">Please fix the following errors:</p>

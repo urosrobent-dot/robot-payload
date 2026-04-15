@@ -34,6 +34,7 @@ type Robot = {
   i4_max_kgm2: number
   i5_max_kgm2: number
   i6_max_kgm2: number
+  image_url?: string | null
 }
 
 type Section = 'library' | 'checker' | 'finder'
@@ -194,20 +195,31 @@ async function handleLogout() {
   <RobotFinder />
 ) : selected ? (
   section === 'library' ? (
-    <RobotDetail
-      robot={selected}
-      onDeleted={() => { setSelected(null); fetchRobots() }}
-      onEdit={() => {}}
-      onUpdated={handleUpdated}
-      isAdmin={isAdmin}
-    />
+<RobotDetail
+  robot={selected}
+  onDeleted={() => { setSelected(null); fetchRobots() }}
+  onEdit={() => {}}
+  onUpdated={handleUpdated}
+  isAdmin={isAdmin}
+  payloadState={payloadState}
+  onPayloadStateChange={setPayloadState}
+/>
   ) : (
-  <div className="p-8 flex flex-col gap-6">
-  <div>
-    <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
-    <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
+<div className="p-8 flex flex-col gap-6">
+  <div className="flex items-center gap-4">
+    {selected.image_url && (
+      <img
+        src={selected.image_url}
+        alt={selected.model}
+        className="w-20 h-20 object-contain rounded-lg border border-gray-200 bg-gray-50"
+      />
+    )}
+    <div>
+      <h2 className="text-xl font-medium text-gray-900">Payload Checker</h2>
+      <p className="text-sm text-gray-400 mt-1">{selected.manufacturer} {selected.model}</p>
+    </div>
   </div>
-  <PayloadChecker robot={selected} state={payloadState} onStateChange={setPayloadState} />
+<PayloadChecker robot={selected} state={payloadState} onStateChange={setPayloadState} />
 </div>
   )
 ) : (

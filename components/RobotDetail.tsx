@@ -20,6 +20,18 @@ type Robot = {
   i4_max_kgm2: number
   i5_max_kgm2: number
   i6_max_kgm2: number
+  image_url?: string | null
+}
+
+type PayloadState = {
+  mass: string
+  j3: string
+  x: string
+  y: string
+  z: string
+  ix: string
+  iy: string
+  iz: string
 }
 
 type Props = {
@@ -28,9 +40,11 @@ type Props = {
   onEdit: () => void
   onUpdated: () => void
   isAdmin: boolean
+  payloadState: PayloadState
+  onPayloadStateChange: (s: PayloadState) => void
 }
 
-export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated, isAdmin }: Props) {
+export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated, isAdmin, payloadState, onPayloadStateChange }: Props) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -45,41 +59,53 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated, isAdm
 
   return (
     <div className="p-8 flex flex-col gap-6">
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-medium text-gray-900">{robot.manufacturer} {robot.model}</h2>
-          <p className="text-sm text-gray-400 mt-1">{robot.axes}-axis robot</p>
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-6">
+          {robot.image_url && (
+            <img
+              src={robot.image_url}
+              alt={robot.model}
+              className="w-48 h-48 object-contain rounded-xl border border-gray-200 bg-gray-50"
+            />
+          )}
+          <div>
+            <h2 className="text-xl font-medium text-gray-900">{robot.manufacturer} {robot.model}</h2>
+            <p className="text-sm text-gray-400 mt-1">{robot.axes}-axis robot</p>
+          </div>
         </div>
-{isAdmin && (
-  <div className="flex gap-2">
-    <button
-      onClick={() => setView('specs')}
-      className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'specs' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-    >
-      Specifications
-    </button>
-    <button
-      onClick={() => setView('checker')}
-      className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'checker' ? 'bg-sky-800 text-white border-orange-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-    >
-      Payload Checker
-    </button>
-    <button
-      onClick={() => setEditing(true)}
-      className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
-    >
-      Edit
-    </button>
-    <button
-      onClick={() => setConfirming(true)}
-      className="px-4 py-2 text-sm font-medium bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-red-600"
-    >
-      Delete
-    </button>
-  </div>
-)}
+
+        {isAdmin && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView('specs')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'specs' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              Specifications
+            </button>
+            <button
+              onClick={() => setView('checker')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border ${view === 'checker' ? 'bg-sky-800 text-white border-sky-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              Payload Checker
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => setConfirming(true)}
+              className="px-4 py-2 text-sm font-medium bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        )}
       </div>
+
       {/* Specs view */}
       {view === 'specs' && (
         <>
@@ -138,7 +164,13 @@ export default function RobotDetail({ robot, onDeleted, onEdit, onUpdated, isAdm
       )}
 
       {/* Payload Checker view */}
-      {view === 'checker' && <PayloadChecker robot={robot} />}
+      {view === 'checker' && (
+        <PayloadChecker
+          robot={robot}
+          state={payloadState}
+          onStateChange={onPayloadStateChange}
+        />
+      )}
 
       {/* Delete confirmation */}
       {confirming && (

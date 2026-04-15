@@ -1,9 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts'
+import { useRef, useState } from 'react'
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
+} from 'recharts'
 import ArmVisualization3D from '@/components/ArmVisualization3D'
 import PayloadDiagram from '@/components/PayloadDiagram'
+import ExportPDF from '@/components/ExportPDF'
 
 type Robot = {
   id: string
@@ -20,6 +31,7 @@ type Robot = {
   i4_max_kgm2: number
   i5_max_kgm2: number
   i6_max_kgm2: number
+  image_url?: string | null
 }
 
 type PayloadState = {
@@ -42,11 +54,21 @@ type Props = {
 type Results = {
   payloadPct: number
   actualJ5Offset: number
-  m4: number; m5: number; m6: number
-  m4pct: number; m5pct: number; m6pct: number
-  i4: number; i5: number; i6: number
-  i4pct: number; i5pct: number; i6pct: number
-  cl4pct: number; cl5pct: number; cl6pct: number
+  m4: number
+  m5: number
+  m6: number
+  m4pct: number
+  m5pct: number
+  m6pct: number
+  i4: number
+  i5: number
+  i6: number
+  i4pct: number
+  i5pct: number
+  i6pct: number
+  cl4pct: number
+  cl5pct: number
+  cl6pct: number
   payloadStatus: 'OK' | 'WARN' | 'OVER'
   momentStatus: 'OK' | 'WARN' | 'OVER'
   inertiaStatus: 'OK' | 'WARN' | 'OVER'
@@ -78,25 +100,41 @@ function statusBg(s: string) {
   return 'bg-green-50 border-green-200 text-green-600'
 }
 
-function Field({ label, unit, value, onChange }: {
-  label: string, unit: string, value: string, onChange: (v: string) => void
+function Field({
+  label,
+  unit,
+  value,
+  onChange,
+}: {
+  label: string
+  unit: string
+  value: string
+  onChange: (v: string) => void
 }) {
   return (
     <div>
-      <label className="text-xs text-gray-500 mb-1 block">{label} <span className="text-gray-400">({unit})</span></label>
+      <label className="text-xs text-gray-500 mb-1 block">
+        {label} <span className="text-gray-400">({unit})</span>
+      </label>
       <input
         type="number"
         step="any"
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900"
         placeholder="0"
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
       />
     </div>
   )
 }
 
-function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax }: {
+function LoadDiagram({
+  title,
+  momentActual,
+  momentMax,
+  inertiaActual,
+  inertiaMax,
+}: {
   title: string
   momentActual: number
   momentMax: number
@@ -108,32 +146,29 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
   const axisMaxM = Math.round(momentMax * 1.2 * 1000) / 1000
   const axisMaxI = Math.round(inertiaMax * 1.2 * 1000) / 1000
 
-  const specPoint = [{ x: 0, y: 0 }]
-  const actualPoint = [{ x: Math.round(inertiaActual * 1000) / 1000, y: Math.round(momentActual * 1000) / 1000 }]
+  const actualPoint = [
+    {
+      x: Math.round(inertiaActual * 1000) / 1000,
+      y: Math.round(momentActual * 1000) / 1000,
+    },
+  ]
+
   const specDot = [{ x: inertiaMax * 0.02, y: momentMax * 0.95 }]
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">{title}</p>
+
       <ResponsiveContainer width="100%" height={200}>
         <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 
-          {/* OK zone — green */}
           <ReferenceArea x1={0} x2={warnI} y1={0} y2={warnM} fill="#dcfce7" fillOpacity={0.5} />
-
-          {/* WARN zone — yellow */}
           <ReferenceArea x1={0} x2={inertiaMax} y1={0} y2={momentMax} fill="#fef9c3" fillOpacity={0.5} />
-
-          {/* OVER zone — red (full background) */}
           <ReferenceArea x1={0} x2={axisMaxI} y1={0} y2={axisMaxM} fill="#fee2e2" fillOpacity={0.4} />
 
-          {/* Max lines */}
           <ReferenceLine x={inertiaMax} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1} />
           <ReferenceLine y={momentMax} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1} />
-
-          {/* Warn lines */}
-          {/* Warn lines */}
           <ReferenceLine x={warnI} stroke="#eab308" strokeDasharray="4 4" strokeWidth={1.5} />
           <ReferenceLine y={warnM} stroke="#eab308" strokeDasharray="4 4" strokeWidth={1.5} />
 
@@ -145,6 +180,7 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
             tick={{ fontSize: 10 }}
             label={{ value: 'kg·m²', position: 'insideBottom', offset: -10, fontSize: 10 }}
           />
+
           <YAxis
             type="number"
             dataKey="y"
@@ -153,14 +189,14 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
             tick={{ fontSize: 10 }}
             label={{ value: 'Nm', angle: -90, position: 'insideLeft', fontSize: 10 }}
           />
+
           <Tooltip
             formatter={(val, name) => [
               typeof val === 'number' ? val.toFixed(3) : val,
-              name === 'x' ? 'Inertia' : 'Moment'
+              name === 'x' ? 'Inertia' : 'Moment',
             ]}
           />
 
-          {/* Spec point — green square */}
           <Scatter
             data={specDot}
             fill="#16a34a"
@@ -170,7 +206,6 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
             }}
           />
 
-          {/* Actual point — red circle */}
           <Scatter
             data={actualPoint}
             fill="#ef4444"
@@ -182,7 +217,6 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
         </ScatterChart>
       </ResponsiveContainer>
 
-      {/* Legend */}
       <div className="flex gap-4 mt-2 justify-center">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-green-600 rounded-sm" />
@@ -198,25 +232,27 @@ function LoadDiagram({ title, momentActual, momentMax, inertiaActual, inertiaMax
 }
 
 export default function PayloadChecker({ robot, state, onStateChange }: Props) {
-const mass = state.mass
-const j3 = state.j3
-const x = state.x
-const y = state.y
-const z = state.z
-const ix = state.ix
-const iy = state.iy
-const iz = state.iz
+  const mass = state.mass
+  const j3 = state.j3
+  const x = state.x
+  const y = state.y
+  const z = state.z
+  const ix = state.ix
+  const iy = state.iy
+  const iz = state.iz
 
-const setMass = (v: string) => onStateChange({ ...state, mass: v })
-const setJ3 = (v: string) => onStateChange({ ...state, j3: v })
-const setX = (v: string) => onStateChange({ ...state, x: v })
-const setY = (v: string) => onStateChange({ ...state, y: v })
-const setZ = (v: string) => onStateChange({ ...state, z: v })
-const setIx = (v: string) => onStateChange({ ...state, ix: v })
-const setIy = (v: string) => onStateChange({ ...state, iy: v })
-const setIz = (v: string) => onStateChange({ ...state, iz: v })
+  const setMass = (v: string) => onStateChange({ ...state, mass: v })
+  const setJ3 = (v: string) => onStateChange({ ...state, j3: v })
+  const setX = (v: string) => onStateChange({ ...state, x: v })
+  const setY = (v: string) => onStateChange({ ...state, y: v })
+  const setZ = (v: string) => onStateChange({ ...state, z: v })
+  const setIx = (v: string) => onStateChange({ ...state, ix: v })
+  const setIy = (v: string) => onStateChange({ ...state, iy: v })
+  const setIz = (v: string) => onStateChange({ ...state, iz: v })
+
   const [results, setResults] = useState<Results | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const diagramRef = useRef<HTMLDivElement | null>(null)
 
   function calculate() {
     const m = parseFloat(mass) || 0
@@ -229,7 +265,6 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
     const j5 = (robot.j5_offset_mm || 0) / 1000
     const g = 9.81
 
-    // Actual J5 offset
     const actualJ5Offset = Math.sqrt(cx ** 2 + cy ** 2 + (cz + j5) ** 2)
 
     const m4 = m * g * Math.sqrt(cx ** 2 + cy ** 2 + (cz + j5) ** 2)
@@ -240,7 +275,6 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
     const i5 = iix + m * (cx ** 2 + cy ** 2 + (cz + j5) ** 2)
     const i6 = iiz + m * (cx ** 2 + cy ** 2)
 
-    // Percentages
     const payloadPct = (m / robot.max_payload_kg) * 100
     const m4pct = (m4 / robot.m4_max_nm) * 100
     const m5pct = (m5 / robot.m5_max_nm) * 100
@@ -249,10 +283,9 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
     const i5pct = (i5 / robot.i5_max_kgm2) * 100
     const i6pct = (i6 / robot.i6_max_kgm2) * 100
 
-    // Combined load
-    const cl4pct = (m4 / robot.m4_max_nm + i4 / robot.i4_max_kgm2) / 2 * 100
-    const cl5pct = (m5 / robot.m5_max_nm + i5 / robot.i5_max_kgm2) / 2 * 100
-    const cl6pct = (m6 / robot.m6_max_nm + i6 / robot.i6_max_kgm2) / 2 * 100
+    const cl4pct = ((m4 / robot.m4_max_nm + i4 / robot.i4_max_kgm2) / 2) * 100
+    const cl5pct = ((m5 / robot.m5_max_nm + i5 / robot.i5_max_kgm2) / 2) * 100
+    const cl6pct = ((m6 / robot.m6_max_nm + i6 / robot.i6_max_kgm2) / 2) * 100
 
     const payloadStatus = status(payloadPct)
     const momentStatus = worstStatus(status(m4pct), status(m5pct), status(m6pct))
@@ -263,19 +296,34 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
     const approved = overall === 'OVER' ? 'NO' : overall === 'WARN' ? 'WARN' : 'OK'
 
     setResults({
-      payloadPct, actualJ5Offset,
-      m4, m5, m6, m4pct, m5pct, m6pct,
-      i4, i5, i6, i4pct, i5pct, i6pct,
-      cl4pct, cl5pct, cl6pct,
-      payloadStatus, momentStatus, inertiaStatus, clStatus,
-      approved
+      payloadPct,
+      actualJ5Offset,
+      m4,
+      m5,
+      m6,
+      m4pct,
+      m5pct,
+      m6pct,
+      i4,
+      i5,
+      i6,
+      i4pct,
+      i5pct,
+      i6pct,
+      cl4pct,
+      cl5pct,
+      cl6pct,
+      payloadStatus,
+      momentStatus,
+      inertiaStatus,
+      clStatus,
+      approved,
     })
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-6">
-        {/* Input */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
           <p className="text-xs text-gray-400 uppercase tracking-wider">Payload Input Data</p>
 
@@ -284,9 +332,9 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
 
           <p className="text-xs text-gray-400 uppercase tracking-wider pt-2">Center of Gravity (mm)</p>
           <div className="grid grid-cols-3 gap-3">
-          <Field label="X" unit="mm" value={x} onChange={setX} />
-          <Field label="Y" unit="mm" value={y} onChange={setY} />
-          <Field label="Z" unit="mm" value={z} onChange={setZ} />
+            <Field label="X" unit="mm" value={x} onChange={setX} />
+            <Field label="Y" unit="mm" value={y} onChange={setY} />
+            <Field label="Z" unit="mm" value={z} onChange={setZ} />
           </div>
 
           <p className="text-xs text-gray-400 uppercase tracking-wider pt-2">Payload Inertia (kg·m²)</p>
@@ -296,29 +344,37 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
             <Field label="Iz" unit="kg·m²" value={iz} onChange={setIz} />
           </div>
 
-<div className="flex gap-2 mt-2">
-  <button
-    onClick={calculate}
-    className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-all"
-  >
-    Calculate
-  </button>
-  <button
-    onClick={() => setConfirmClear(true)}
-    className="px-4 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50"
-  >
-    Clear
-  </button>
-</div>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={calculate}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-all"
+            >
+              Calculate
+            </button>
+
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="px-4 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50"
+            >
+              Clear
+            </button>
+
+            {results && (
+              <ExportPDF
+                robot={robot}
+                results={results}
+                inputs={{ mass, x, y, z, ix, iy, iz }}
+                diagramElement={diagramRef.current}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Results */}
         <div className="flex flex-col gap-4">
           {results ? (
             <>
-              {/* Summary */}
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Summary Results</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Static Analysis</p>
                 <div className="flex flex-col gap-2">
                   {[
                     { label: 'Payload', s: results.payloadStatus },
@@ -326,23 +382,31 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
                     { label: 'Combined Loads', s: results.clStatus },
                     { label: 'Inertias', s: results.inertiaStatus },
                   ].map(({ label, s }) => (
-                    <div key={label} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
+                    <div
+                      key={label}
+                      className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0"
+                    >
                       <span className="text-sm text-gray-600">{label}</span>
                       <span className={`text-sm font-medium ${statusColor(s)}`}>{s}</span>
                     </div>
                   ))}
+
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-sm font-medium text-gray-900">Approved</span>
-                    <span className={`text-sm font-medium px-3 py-1 rounded-full border ${statusBg(results.approved === 'NO' ? 'OVER' : results.approved)}`}>
+                    <span
+                      className={`text-sm font-medium px-3 py-1 rounded-full border ${statusBg(
+                        results.approved === 'NO' ? 'OVER' : results.approved
+                      )}`}
+                    >
                       {results.approved}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Detailed results */}
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Detailed Results</p>
+
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-gray-400 border-b border-gray-100">
@@ -353,14 +417,18 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
                       <td className="pb-2 text-right">Status</td>
                     </tr>
                   </thead>
+
                   <tbody>
                     <tr className="border-b border-gray-50">
                       <td className="py-1.5 text-gray-600">J6 Payload</td>
                       <td className="py-1.5 text-right text-gray-500">{robot.max_payload_kg} kg</td>
                       <td className="py-1.5 text-right text-gray-900">{parseFloat(mass) || 0} kg</td>
                       <td className="py-1.5 text-right text-gray-900">{results.payloadPct.toFixed(1)}</td>
-                      <td className={`py-1.5 text-right font-medium ${statusColor(results.payloadStatus)}`}>{results.payloadStatus}</td>
+                      <td className={`py-1.5 text-right font-medium ${statusColor(results.payloadStatus)}`}>
+                        {results.payloadStatus}
+                      </td>
                     </tr>
+
                     <tr className="border-b border-gray-50">
                       <td className="py-1.5 text-gray-600">Actual J5 Offset</td>
                       <td className="py-1.5 text-right text-gray-500">—</td>
@@ -368,6 +436,7 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
                       <td className="py-1.5 text-right text-gray-500">—</td>
                       <td className="py-1.5 text-right text-gray-500">—</td>
                     </tr>
+
                     {[
                       { label: 'Axis 4 Moment', spec: robot.m4_max_nm, actual: results.m4, pct: results.m4pct, unit: 'Nm' },
                       { label: 'Axis 5 Moment', spec: robot.m5_max_nm, actual: results.m5, pct: results.m5pct, unit: 'Nm' },
@@ -381,10 +450,14 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
                     ].map(({ label, spec, actual, pct, unit }) => (
                       <tr key={label} className="border-b border-gray-50">
                         <td className="py-1.5 text-gray-600">{label}</td>
-                        <td className="py-1.5 text-right text-gray-500">{spec} {unit}</td>
+                        <td className="py-1.5 text-right text-gray-500">
+                          {spec} {unit}
+                        </td>
                         <td className="py-1.5 text-right text-gray-900">{actual.toFixed(3)}</td>
                         <td className="py-1.5 text-right text-gray-900">{pct.toFixed(1)}</td>
-                        <td className={`py-1.5 text-right font-medium ${statusColor(status(pct))}`}>{status(pct)}</td>
+                        <td className={`py-1.5 text-right font-medium ${statusColor(status(pct))}`}>
+                          {status(pct)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -399,17 +472,20 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
         </div>
       </div>
 
-
       <PayloadDiagram
-  robot={robot}
-  lx={parseFloat(x) || 0}
-  ly={parseFloat(y) || 0}
-  lz={parseFloat(z) || 0}
-  mass={parseFloat(mass) || 0}
-/>
+        robot={robot}
+        lx={parseFloat(x) || 0}
+        ly={parseFloat(y) || 0}
+        lz={parseFloat(z) || 0}
+        mass={parseFloat(mass) || 0}
+        onChartReady={(el) => {
+          diagramRef.current = el
+        }}
+      />
+
       {results && (
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Load Diagrams</p>
+          <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Axis Load Diagrams</p>
           <div className="grid grid-cols-3 gap-4">
             <LoadDiagram
               title="Axis 4 (J4)"
@@ -418,6 +494,7 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
               inertiaActual={results.i4}
               inertiaMax={robot.i4_max_kgm2}
             />
+
             <LoadDiagram
               title="Axis 5 (J5)"
               momentActual={results.m5}
@@ -425,6 +502,7 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
               inertiaActual={results.i5}
               inertiaMax={robot.i5_max_kgm2}
             />
+
             <LoadDiagram
               title="Axis 6 (J6)"
               momentActual={results.m6}
@@ -435,32 +513,47 @@ const setIz = (v: string) => onStateChange({ ...state, iz: v })
           </div>
         </div>
       )}
+
       {confirmClear && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-6 w-80 shadow-xl">
-      <h3 className="text-base font-medium text-gray-900 mb-2">Clear Data</h3>
-      <p className="text-sm text-gray-500 mb-5">Are you sure you want to clear all payload input data?</p>
-      <div className="flex gap-2">
-        <button
-          onClick={() => setConfirmClear(false)}
-          className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => {
-            onStateChange({ mass: '', j3: '', x: '', y: '', z: '', ix: '', iy: '', iz: '' })
-            setResults(null)
-            setConfirmClear(false)
-          }}
-          className="flex-1 bg-red-500 text-white text-sm font-medium py-2 rounded-lg hover:bg-red-600"
-        >
-          Clear
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-xl">
+            <h3 className="text-base font-medium text-gray-900 mb-2">Clear Data</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Are you sure you want to clear all payload input data?
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmClear(false)}
+                className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  onStateChange({
+                    mass: '',
+                    j3: '',
+                    x: '',
+                    y: '',
+                    z: '',
+                    ix: '',
+                    iy: '',
+                    iz: '',
+                  })
+                  setResults(null)
+                  setConfirmClear(false)
+                }}
+                className="flex-1 bg-red-500 text-white text-sm font-medium py-2 rounded-lg hover:bg-red-600"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ArmVisualization3D
         lx={parseFloat(x) || 0}
         ly={parseFloat(y) || 0}
